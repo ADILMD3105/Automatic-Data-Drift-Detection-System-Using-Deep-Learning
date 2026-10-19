@@ -67,7 +67,6 @@ DriftDetect-AI/
 ├── server.py
 ├── requirements.txt
 ├── README.md
-├── images/
 └── src/
     ├── autoencoder.py
     ├── data_loader.py
