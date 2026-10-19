@@ -1,98 +1,175 @@
 # DriftDetect AI
+### Automatic Data Drift Detection System Using Deep Learning
 
-An autoencoder-based dataset drift monitor. The frontend (`index.html`) is a
-self-contained visual UI; `server.py` is a small Flask bridge that connects
-it to the real detection pipeline in `src/` (`data_loader.py`,
-`autoencoder.py`, `detect_drift.py`) and the trained weights
-(`autoencoder.pth`).
+DriftDetect AI is an interactive, web-based data drift monitoring system that uses deep autoencoders to analyze datasets, evaluate reconstruction errors, and identify samples that deviate from a reference distribution.
 
-## Project layout
+Built with PyTorch and Flask, the application integrates a dynamic machine learning pipeline with a custom visual interface, bringing data ingestion, model training, drift analysis, and result visualization into a unified workflow.
 
+## ✨ Key Features
+
+- **Interactive Monitoring Interface** — A custom web interface for uploading datasets, initiating analysis, and exploring results.
+- **Dynamic Autoencoder Training** — Trains a fresh autoencoder for each analysis using the uploaded reference dataset.
+- **Automated Data Preprocessing** — Handles supported file formats, numeric conversion, missing values, feature filtering, and standardization.
+- **Reconstruction-Error Analysis** — Evaluates reference and current samples using a trained autoencoder.
+- **Statistical Thresholding** — Derives a detection threshold from the 95th percentile of reference reconstruction errors.
+- **Sample-Level Drift Flags** — Identifies current samples whose reconstruction errors exceed the reference threshold.
+- **Visual Results and Metrics** — Presents drift statistics, reconstruction errors, and analysis stages through the frontend.
+- **Flask API Integration** — Connects the browser interface to the Python machine learning pipeline.
+
+## 🧠 System Architecture
+
+The application follows a modular architecture that separates the user interface, API layer, data processing, model training, and detection logic.
+
+```text
+Reference Dataset ──┐
+                    ├──> Flask API
+Current Dataset ────┘        │
+                             ▼
+                    Data Preprocessing
+                             │
+                             ▼
+                  Reference-Based Scaling
+                             │
+                             ▼
+                   Autoencoder Training
+                    (Reference Only)
+                             │
+                             ▼
+                  Reconstruction Errors
+                    ┌────────┴────────┐
+                    ▼                 ▼
+              Reference Data     Current Data
+                    │                 │
+                    ▼                 ▼
+                 P95 Threshold ──> Drift Flags
+                                      │
+                                      ▼
+                             Interactive Results
 ```
-DriftDetect/
-├── index.html          # frontend (unchanged visual design, real backend calls)
-├── server.py            # Flask bridge: serves index.html + POST /api/detect-drift
-├── autoencoder.pth       # trained autoencoder weights (30 input features)
+
+## ⚙️ Technology Stack
+
+| Component | Technologies |
+|---|---|
+| Programming Language | Python |
+| Machine Learning | PyTorch |
+| Data Processing | Pandas, NumPy |
+| Preprocessing | scikit-learn |
+| Backend | Flask |
+| Frontend | HTML, CSS, JavaScript |
+| Data Formats | CSV, TXT, XLSX |
+
+## 📁 Project Structure
+
+```text
+DriftDetect-AI/
+├── index.html
+├── server.py
 ├── requirements.txt
+├── README.md
+├── images/
 └── src/
-    ├── __init__.py
-    ├── data_loader.py    # load_data / preprocess_data / split_baseline_stream
-    ├── autoencoder.py     # Autoencoder model definition
-    ├── detect_drift.py    # detect_drift() — the real analysis entry point
-    └── train.py           # trains a new autoencoder.pth from a baseline CSV
+    ├── autoencoder.py
+    ├── data_loader.py
+    ├── detect_drift.py
+    └── train.py
 ```
 
-## Setup
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.10 or later
+- pip
+- A supported operating system with the required Python dependencies
+
+### Installation
+
+Clone the repository:
 
 ```bash
-cd DriftDetect
-python3 -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+git clone <YOUR_REPOSITORY_URL>
+cd DriftDetect-AI
+```
+
+Create a virtual environment:
+
+```bash
+python -m venv .venv
+```
+
+Activate it on Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+On Linux or macOS:
+
+```bash
+source .venv/bin/activate
+```
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-## Run
+### Launch the Application
 
 ```bash
-python3 server.py
+python server.py
 ```
 
-Then open **http://localhost:5000** in your browser. That's it — the
-frontend is served by the same process that runs the detector, so there's
-no separate dev server and no CORS setup needed.
+Open the application in your browser:
 
-By default it listens on port 5000. Override with `PORT=8000 python3
-server.py` if that port is taken.
+**http://127.0.0.1:5000**
 
-## Using it
+## 📊 How It Works
 
-1. Drop or select a **reference** (baseline) dataset and a **current**
-   (stream) dataset into the two dropzones — `.csv`, `.txt` (semicolon
-   -delimited), or `.xlsx`.
-2. Click **Run Analysis**. The frontend sends both files to
-   `POST /api/detect-drift`.
-3. The server loads them with `src/data_loader.py`, runs them through the
-   trained autoencoder in `src/detect_drift.py`, computes the 95th
-   -percentile reconstruction-error threshold on the reference set, and
-   flags current-set samples above it.
-4. Real results (threshold, drift ratio, per-sample reconstruction errors,
-   drift flags) are streamed back and rendered in the existing chart,
-   metrics, and AI Core visualization — nothing is fabricated client-side.
+1. **Data Ingestion:** Upload reference and current datasets through the interface.
+2. **Preprocessing:** Convert supported input data into a suitable numerical representation and standardize features using statistics fitted on the reference data.
+3. **Model Training:** Train a fresh autoencoder using the reference dataset only.
+4. **Reconstruction Analysis:** Calculate reconstruction errors for reference and current samples using the trained model.
+5. **Threshold Calculation:** Determine the 95th-percentile reference reconstruction-error threshold.
+6. **Drift Evaluation:** Flag current samples whose reconstruction errors exceed the threshold.
+7. **Visualization:** Display the resulting metrics and analysis output through the web interface.
 
-## Important: the bundled model expects 30 numeric features
+## 🔬 Detection Methodology
 
-`autoencoder.pth` was trained with an input dimension of **30** (inspected
-directly from the saved weight shapes). After `preprocess_data()` drops any
-non-numeric first column and any all-missing/no-variance columns, your
-reference **and** current datasets must both resolve to exactly 30 numeric
-feature columns, or `detect_drift()` will raise a `ValueError` for
-mismatched feature counts — which the UI will show as an analysis error
-rather than a fake result.
+The system uses reconstruction error as an indicator of deviation from the reference distribution.
 
-If you want to use your own dataset shape, retrain first:
+For a reference reconstruction-error distribution \(E_r\), the threshold is:
 
-```bash
-python3 -m src.train path/to/baseline.csv
-```
+\[
+T = P_{95}(E_r)
+\]
 
-This trains a new autoencoder on the baseline portion of that file (see
-`split_baseline_stream` in `src/data_loader.py`, 60% baseline / 40% stream
-by default) and overwrites `autoencoder.pth` in the project root.
+For each current sample with reconstruction error \(e_i\):
 
-## Missing pieces / things to verify on your machine
+\[
+\operatorname{flag}_i =
+\begin{cases}
+1 & e_i > T\\
+0 & e_i \leq T
+\end{cases}
+\]
 
-- **PyTorch could not be installed or exercised in this sandbox** (no
-  network access here), so the tensor math itself was not run end-to-end
-  in this environment. Everything *around* it was verified directly:
-  the Flask routes, file upload handling, `data_loader.py`'s CSV/TXT/XLSX
-  parsing, `detect_drift.py`'s control flow, and the exact JSON contract
-  the frontend expects were all tested with a stand-in autoencoder. Once
-  you `pip install -r requirements.txt` (which pulls real `torch`) on a
-  machine with network access, the only remaining variable is the actual
-  model weights — verify `autoencoder.pth` loads and expects 30 input
-  features as noted above.
-- No dataset was provided in this handoff, so drift results couldn't be
-  verified against a real reference/current pair — you'll need to supply
-  one that matches the 30-feature shape above (or retrain).
-- CORS/auth are intentionally out of scope — this is a local single-user
-  bridge server, not a hardened deployment.
+The drift ratio is calculated as the proportion of current samples flagged by this rule.
+
+The approach is unsupervised and does not require labeled drift examples. Its effectiveness depends on the characteristics of the input data, preprocessing, and model behavior.
+
+## 🛠️ Design Philosophy
+
+DriftDetect AI combines a modular Python backend with a purpose-built visual interface. Its design emphasizes a clear workflow from dataset ingestion through computation to interpretable monitoring results.
+
+The separation between the frontend, Flask API, data-processing utilities, and autoencoder pipeline supports maintainability and further experimentation.
+
+## 🔮 Future Development
+
+Potential extensions include streaming-data support, more extensive drift benchmarks, training-progress visualization, and additional statistical detection methods.
+
+## 📄 License
+
+Add an appropriate open-source license before distributing the project for reuse.
